@@ -99,8 +99,8 @@ CREATE TABLE "matrix_stats" (
 
 1. Clonar el repositorio:
 ```bash
-git clone <repository-url>
-cd TodoListBeginner
+git clone https://github.com/marcocruzado/matrix-endpoint-challenge
+cd matrix-endpoint-challenge
 ```
 
 2. Configurar variables de entorno:
@@ -109,10 +109,14 @@ cd TodoListBeginner
 # server-one/.env
 PORT=3000
 DATABASE_URL="postgresql://postgres:localhost_password@postgres:5432/matrix_db?schema=public"
+PREFIX_API=/api/v1/server-1
+URL_SERVER_TWO=http://matrix_server_two:3001/api/v1/server-2/matrix-stats/stadistics
 
 # server-two/.env
 PORT=3001
 DATABASE_URL="postgresql://postgres:localhost_password@postgres:5432/matrix_db?schema=public"
+PREFIX_API=/api/v1/server-2
+URL_FRONTEND=http://localhost:4200
 ```
 
 3. Iniciar los servicios:
