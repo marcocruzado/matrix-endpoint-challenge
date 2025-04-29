@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:12-alpine
+    container_name: matrix_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localhost_password
+      POSTGRES_DB: matrix_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - matrix_network
+
+  server-one:
+    build:
+      context: ./server-one
+      dockerfile: Dockerfile
+    container_name: matrix_server_one
+    env_file:
+      - ./server-one/.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks:
+      - matrix_network
+
+  server-two:
+    build:
+      context: ./server-two
+      dockerfile: Dockerfile
+    container_name: matrix_server_two
+    env_file:
+      - ./server-two/.env
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    networks:
+      - matrix_network
+
+networks:
+  matrix_network:
+    driver: bridge
+
+volumes:
+  postgres_data: 
