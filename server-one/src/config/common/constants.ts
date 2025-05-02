@@ -15,3 +15,9 @@ export const CORS_OPTIONS = {
     'Origin, X-Requested-With, Content-Type, Accept, Authorization, Document-Type',
   credentials: true,
 };
+
+export const SECRET_KEY = String(process.env.SECRET_KEY) || 'secret';
+export const EXPIRATION_TIME = String(process.env.EXPIRATION_TIME) || '3600';
+export const ALGORITHM = String(process.env.ALGORITHM) || 'HS256';
+export const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
+export const REFRESH_TOKEN_EXPIRATION = String(process.env.REFRESH_TOKEN_EXPIRATION) || '604800';

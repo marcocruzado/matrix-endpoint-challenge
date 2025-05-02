@@ -18,17 +18,46 @@ model matrix {
 }
 
 model MatrixStats {
-  id            Int      @id @default(autoincrement())
-  original      Json
-  rotated       Json
-  qMatrix       Json
-  rMatrix       Json
-  maxValue      Float
-  minValue      Float
-  average       Float
-  totalSum      Float
-  isDiagonal    Json
-  createdAt     DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  original   Json
+  rotated    Json
+  qMatrix    Json
+  rMatrix    Json
+  maxValue   Float
+  minValue   Float
+  average    Float
+  totalSum   Float
+  isDiagonal Json
+  createdAt  DateTime @default(now())
 
   @@map("matrix_stats")
+}
+
+model user {
+  id             Int       @id @default(autoincrement())
+  name           String
+  email          String
+  password       String
+  documentType   String
+  documentNumber String
+  roleId         Int
+  status         String
+  lastName       String
+  nickName       String
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  role role? @relation(fields: [roleId], references: [id])
+}
+
+model role {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users user[]
 }

@@ -12,6 +12,10 @@ echo "Running database migrations..."
 npx prisma migrate reset --force
 npx prisma migrate deploy
 
+# Ejecutar el seeder
+echo "Running database seed..."
+npm run prisma:seed
+
 # Iniciar la aplicación
 echo "Starting the application..."
 npm run start:prod 

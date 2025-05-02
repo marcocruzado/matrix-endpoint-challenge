@@ -82,8 +82,7 @@ function handleGenericError(error: Error | unknown, res: Response) {
   res.status(HTTP_STATUS.STATUS_500).json({
     status: 'error',
     statusCode: HTTP_STATUS.STATUS_500,
-    message: 'An unexpected error occurred',
-    error: error,
+    message: error instanceof Error ? error.message : 'An unexpected error occurred',
   });
 }
 

@@ -27,18 +27,14 @@ export class CreationMatrixServices {
   public async createMatrix(data: any): Promise<any> {
     $log.info(`${SERVICES.MATRIX}${METHOD.POST}`);
     
-    // Convertir la matriz de entrada a formato ml-matrix
     const inputMatrix = new Matrix(data.matrix);
     
-    // Realizar la factorización QR
     const qr = new QrDecomposition(inputMatrix);
     const Q = qr.orthogonalMatrix;
     const R = qr.upperTriangularMatrix;
 
-    // Realizar la rotación de la matriz original
     const rotatedMatrix = this.rotateMatrix(data.matrix);
     
-    // Preparar la respuesta
     const response = {
       original: data.matrix,
       rotated: rotatedMatrix,
@@ -46,10 +42,8 @@ export class CreationMatrixServices {
       rMatrix: R.to2DArray()
     };
     
-    // Guardar en la base de datos
     const savedMatrix = await this.creationMatrixRepository.createMatrix(response);
 
-    // Enviar datos a la segunda API
     try {
       const secondApiResponse = await axios.post(this.secondApiUrl, {
         matrices: {

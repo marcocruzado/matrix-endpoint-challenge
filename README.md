@@ -88,6 +88,45 @@ CREATE TABLE "matrix_stats" (
 );
 ```
 
+#### Tabla `user`
+```sql
+CREATE TABLE "user" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "documentType" TEXT NOT NULL,
+    "documentNumber" TEXT NOT NULL,
+    "roleId" INTEGER NOT NULL,
+    "status" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "nickName" TEXT NOT NULL,
+    "refreshToken" TEXT,
+    "tokenExpiresAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "user_pkey" PRIMARY KEY ("id")
+);
+```
+
+#### Tabla `role`
+```sql
+CREATE TABLE "role" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "role_pkey" PRIMARY KEY ("id")
+);
+```
+
+#### Relaciones
+```sql
+ALTER TABLE "user" ADD CONSTRAINT "user_roleId_fkey" 
+FOREIGN KEY ("roleId") REFERENCES "role"("id") 
+ON DELETE RESTRICT ON UPDATE CASCADE;
+```
+
 ## Configuración y Despliegue
 
 ### Prerrequisitos
@@ -107,10 +146,17 @@ cd matrix-endpoint-challenge
    - Crear archivo `.env` en server-one y server-two:
 ```env
 # server-one/.env
+DATABASE_URL="postgresql://postgres:localhost_password@localhost:5432/matrix_db?schema=public"
 PORT=3000
-DATABASE_URL="postgresql://postgres:localhost_password@postgres:5432/matrix_db?schema=public"
 PREFIX_API=/api/v1/server-1
 URL_SERVER_TWO=http://matrix_server_two:3001/api/v1/server-2/matrix-stats/stadistics
+URL_FRONTEND=http://localhost:4200
+
+SECRET_KEY=tu_clave_secreta
+EXPIRATION_TIME=3600
+ALGORITHM=HS256
+SALT_ROUNDS=10
+REFRESH_TOKEN_EXPIRATION=604800
 
 # server-two/.env
 PORT=3001
@@ -155,6 +201,23 @@ curl --location 'http://localhost:3000/api/v1/server-1/creation-matrix/qr-factor
   }
 }
 ```
+
+# PROJECTO WEB Front-End
+
+- paso 1: instalar angular cli
+```bash
+npm install -g @angular/cli
+```
+
+- paso 2: crear un nuevo proyecto angular
+```bash
+ng new matrix-frontend
+```
+- paso 3: comando para crear la estructura de carpetas, con las mejores practicas de desarrollo
+```bash
+cd matrix-frontend && mkdir -p src/app/{core,shared,features/{modulo-ejemplo/{components,services,store}}} src/assets src/environments src/styles
+```
+- TODO: agregar el archivo de estilos principales [POR FINALIZAR]
 
 ## Características Técnicas
 
@@ -203,4 +266,230 @@ curl --location 'http://localhost:3000/api/v1/server-1/creation-matrix/qr-factor
 3. **Problemas con Docker**
    - Limpiar contenedores e imágenes antiguas
    - Verificar los logs de Docker
-   - Asegurar que los puertos no estén en uso 
+   - Asegurar que los puertos no estén en uso
+
+## Endpoints de Autenticación
+
+### 1. Registro de Usuario
+```bash
+curl --location 'http://localhost:3000/api/v1/auth/register' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "John",
+    "lastName": "Doe",
+    "email": "juan@example.com",
+    "password": "123456",
+    "documentType": "DNI",
+    "documentNumber": "12345678",
+    "roleId": 1,
+    "status": "active",
+    "nickName": "johndoe"
+}'
+```
+
+### 2. Login
+```bash
+curl --location 'http://localhost:3000/api/v1/auth/login' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "juan@example.com",
+    "password": "123456"
+}'
+```
+
+### 3. Refresh Token
+```bash
+curl --location 'http://localhost:3000/api/v1/auth/refresh-token' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "refreshToken": "tu_refresh_token_aqui"
+}'
+```
+
+## Respuestas Esperadas
+
+### Registro y Login
+```json
+{
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "John",
+            "email": "juan@example.com",
+            ...
+        },
+        "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+        "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+    }
+}
+```
+
+### Refresh Token
+```json
+{
+    "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+        "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+    }
+}
+```
+
+## Notas Importantes
+
+1. El `accessToken` debe enviarse en el header `Authorization: Bearer <accessToken>` para las peticiones autenticadas
+2. El `refreshToken` solo se usa para obtener nuevos `accessToken`
+3. Si recibes un error 401, significa que el `accessToken` expiró y debes usar el `refreshToken` para obtener uno nuevo
+4. Si el refresh token también expiró, recibirás un error y el usuario deberá volver a iniciar sesión 
+
+## Flujo de Trabajo
+
+### 1. Configuración Inicial
+1. Clonar el repositorio
+2. Configurar las variables de entorno en `server-one/.env`:
+```env
+PORT=3000
+DATABASE_URL="postgresql://postgres:localhost_password@localhost:5432/matrix_db?schema=public"
+PREFIX_API=/api/v1/server-1
+URL_FRONTEND=http://localhost:4200
+SECRET_KEY=tu_clave_secreta
+EXPIRATION_TIME=3600
+ALGORITHM=HS256
+SALT_ROUNDS=10
+REFRESH_TOKEN_EXPIRATION=604800
+```
+
+### 2. Base de Datos
+1. Iniciar PostgreSQL
+2. Ejecutar las migraciones:
+```bash
+cd server-one
+npx prisma migrate dev
+```
+
+### 3. Autenticación
+1. **Configurar Roles por Defecto**
+   - Ejecutar el siguiente comando para crear los roles por defecto:
+   ```bash
+   cd server-one
+   npm run prisma:seed
+   ```
+   - Este comando creará automáticamente tres roles:
+     - ADMIN (id: 1): Para administradores del sistema
+     - USER (id: 2): Para usuarios regulares
+     - GUEST (id: 3): Para usuarios con acceso limitado
+
+2. **Registrar un Usuario**
+   ```bash
+   curl --location 'http://localhost:3000/api/v1/auth/register' \
+   --header 'Content-Type: application/json' \
+   --data-raw '{
+       "name": "John",
+       "lastName": "Doe",
+       "email": "juan@example.com",
+       "password": "123456",
+       "documentType": "DNI",
+       "documentNumber": "12345678",
+       "roleId": 2,  # 2 corresponde al rol USER
+       "status": "active",
+       "nickName": "johndoe"
+   }'
+   ```
+
+3. **Iniciar Sesión**
+   ```bash
+   curl --location 'http://localhost:3000/api/v1/auth/login' \
+   --header 'Content-Type: application/json' \
+   --data-raw '{
+       "email": "juan@example.com",
+       "password": "123456"
+   }'
+   ```
+   - Guardar el `accessToken` y `refreshToken` recibidos
+
+### 4. Operaciones con Matrices
+1. **Autenticar Peticiones**
+   - Usar el `accessToken` en el header de todas las peticiones:
+   ```
+   Authorization: Bearer <accessToken>
+   ```
+
+2. **Realizar Operaciones con Matrices**
+   ```bash
+   curl --location 'http://localhost:3000/api/v1/server-1/creation-matrix/qr-factorization' \
+   --header 'Authorization: Bearer <accessToken>' \
+   --header 'Content-Type: application/json' \
+   --data '{
+     "matrix": [
+       [13, 22, 3],
+       [4, 53, 6],
+       [7, 8, 9]
+     ]
+   }'
+   ```
+
+### 5. Manejo de Tokens
+1. **Cuando el Access Token Expira**
+   - Si recibes un error 401, usar el refresh token:
+   ```bash
+   curl --location 'http://localhost:3000/api/v1/auth/refresh-token' \
+   --header 'Content-Type: application/json' \
+   --data-raw '{
+       "refreshToken": "tu_refresh_token_aqui"
+   }'
+   ```
+   - Usar el nuevo access token recibido
+
+2. **Si el Refresh Token Expira**
+   - El usuario debe volver a iniciar sesión con email y password
+
+### 6. Desarrollo Frontend
+1. **Configurar Angular**
+   ```bash
+   npm install -g @angular/cli
+   ng new matrix-frontend
+   ```
+
+2. **Estructura de Carpetas**
+   ```bash
+   cd matrix-frontend
+   mkdir -p src/app/{core,shared,features/{auth,matrix/{components,services,store}}} src/assets src/environments src/styles
+   ```
+
+3. **Implementar Autenticación**
+   - Crear servicios para login/registro
+   - Implementar interceptores para manejar tokens
+   - Crear guards para rutas protegidas
+
+4. **Implementar Operaciones con Matrices**
+   - Crear componentes para entrada de matrices
+   - Implementar servicios para comunicación con el backend
+   - Mostrar resultados y estadísticas
+
+### 7. Pruebas
+1. **Probar Autenticación**
+   - Verificar registro de usuarios
+   - Probar login/logout
+   - Comprobar renovación de tokens
+
+2. **Probar Operaciones**
+   - Verificar factorización QR
+   - Comprobar cálculos estadísticos
+   - Validar manejo de errores
+
+### 8. Despliegue
+1. **Backend**
+   ```bash
+   docker compose up --build
+   ```
+
+2. **Frontend**
+   ```bash
+   ng build --prod
+   ```
+
+## Consideraciones de Seguridad
+1. Nunca compartir las claves secretas
+2. Mantener los tokens seguros
+3. Usar HTTPS en producción
+4. Implementar rate limiting
+5. Validar todas las entradas 

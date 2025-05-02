@@ -11,6 +11,10 @@ echo "PostgreSQL is ready!"
 echo "Waiting for migrations to complete..."
 sleep 10
 
+# sincronizar las migraciones
+echo "Synchronizing database..."  
+npm run prisma:generate
+
 # Iniciar la aplicación
 echo "Starting the application..."
 npm run start:prod 

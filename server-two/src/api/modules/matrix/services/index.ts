@@ -1,9 +1,16 @@
 import { $log } from 'ts-log-debug';
 import { METHOD, SERVICES } from '../../../../config/common/enums';
 import { MatrixStatsRepository } from '../repository';
-
 export class MatrixStatsService {
   constructor(private matrixStatsRepository: MatrixStatsRepository = new MatrixStatsRepository()) {}
+
+
+  public async getMatrixStats(): Promise<any> {
+    $log.info(`${SERVICES.MATRIX}${METHOD.GET}`);
+    const matrices = await this.matrixStatsRepository.getMatrices();
+    return matrices;
+  }
+
 
   private findMaxValue(matrices: number[][][]): number {
     return Math.max(...matrices.flatMap(matrix => matrix.flatMap(row => row)));
